@@ -1,0 +1,40 @@
+{
+  "app": "socialNetwork",
+  "gateway": "nginx-thrift",
+  "aliases": {
+    "nginx-web-server": "nginx-thrift"
+  },
+  "stores": {
+    "home-timeline-service": {
+      "redis": "home-timeline-redis"
+    },
+    "post-storage-service": {
+      "memcached": "post-storage-memcached",
+      "mongodb": "post-storage-mongodb"
+    },
+    "social-graph-service": {
+      "mongodb": "social-graph-mongodb",
+      "redis": "social-graph-redis"
+    },
+    "url-shorten-service": {
+      "memcached": "url-shorten-memcached",
+      "mongodb": "url-shorten-mongodb"
+    },
+    "user-mention-service": {
+      "memcached": "user-memcached",
+      "mongodb": "user-mongodb"
+    },
+    "user-service": {
+      "memcached": "user-memcached",
+      "mongodb": "user-mongodb"
+    },
+    "user-timeline-service": {
+      "mongodb": "user-timeline-mongodb",
+      "redis": "user-timeline-redis"
+    }
+  },
+  "unused_stores": [
+    "media-memcached",
+    "media-mongodb"
+  ]
+}

@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dsb-criticality"
+version = "0.1.0"
+description = "Rank DeathStarBench microservices and datastores by dependency criticality from Jaeger traces"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Prawal Pokharel" }]
+dependencies = ["networkx>=3.0", "numpy>=1.24"]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.scripts]
+dsb-criticality = "dsb_criticality.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+dsb_criticality = ["maps/*.json"]

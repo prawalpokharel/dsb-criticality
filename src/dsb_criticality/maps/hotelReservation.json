@@ -1,0 +1,36 @@
+{
+  "app": "hotelReservation",
+  "gateway": "frontend",
+  "aliases": {},
+  "stores": {
+    "attractions": {
+      "mongodb": "mongodb-attractions"
+    },
+    "geo": {
+      "mongodb": "mongodb-geo"
+    },
+    "profile": {
+      "mongodb": "mongodb-profile",
+      "memcached": "memcached-profile"
+    },
+    "rate": {
+      "mongodb": "mongodb-rate",
+      "memcached": "memcached-rate"
+    },
+    "recommendation": {
+      "mongodb": "mongodb-recommendation"
+    },
+    "reservation": {
+      "mongodb": "mongodb-reservation",
+      "memcached": "memcached-reserve"
+    },
+    "review": {
+      "mongodb": "mongodb-review",
+      "memcached": "memcached-review"
+    },
+    "user": {
+      "mongodb": "mongodb-user"
+    }
+  },
+  "unused_stores": []
+}

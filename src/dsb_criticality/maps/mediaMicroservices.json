@@ -1,0 +1,48 @@
+{
+  "app": "mediaMicroservices",
+  "gateway": "nginx-web-server",
+  "aliases": {
+    "nginx": "nginx-web-server"
+  },
+  "stores": {
+    "cast-info-service": {
+      "memcached": "cast-info-memcached",
+      "mongodb": "cast-info-mongodb"
+    },
+    "compose-review-service": {
+      "memcached": "compose-review-memcached"
+    },
+    "movie-id-service": {
+      "memcached": "movie-id-memcached",
+      "mongodb": "movie-id-mongodb"
+    },
+    "movie-info-service": {
+      "memcached": "movie-info-memcached",
+      "mongodb": "movie-info-mongodb"
+    },
+    "movie-review-service": {
+      "mongodb": "movie-review-mongodb",
+      "redis": "movie-review-redis"
+    },
+    "plot-service": {
+      "memcached": "plot-memcached",
+      "mongodb": "plot-mongodb"
+    },
+    "rating-service": {
+      "redis": "rating-redis"
+    },
+    "review-storage-service": {
+      "memcached": "review-storage-memcached",
+      "mongodb": "review-storage-mongodb"
+    },
+    "user-review-service": {
+      "mongodb": "user-review-mongodb",
+      "redis": "user-review-redis"
+    },
+    "user-service": {
+      "memcached": "user-memcached",
+      "mongodb": "user-mongodb"
+    }
+  },
+  "unused_stores": []
+}
