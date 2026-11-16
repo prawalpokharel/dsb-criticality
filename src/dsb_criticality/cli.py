@@ -43,7 +43,7 @@ def cmd_rank(args):
         a, b, c = (float(x) for x in args.weights.split(","))
         weights = {"alpha": a, "beta": b, "gamma": c}
     rows = score.rank(ts, g, cover, governance=_governance(args.governance), weights=weights,
-                      bin_seconds=args.bin_seconds)
+                      bin_seconds=args.bin_seconds, entropy=args.entropy)
     if args.sort != "cei":
         rows.sort(key=lambda r: (-r[args.sort], r["component"]))
     if args.top:
@@ -100,6 +100,8 @@ def main(argv=None):
     p.add_argument("--governance", help="JSON {component: value in [0,1]} for the governance term")
     p.add_argument("--weights", help="alpha,beta,gamma (default 0.40,0.35,0.25)")
     p.add_argument("--bin-seconds", type=float, default=1.0)
+    p.add_argument("--entropy", default="demand", choices=["demand", "flow"],
+                   help="CEI entropy term: demand history (published default) or flow-edge entropy")
     p.add_argument("--sort", default="cei", choices=["cei", "blast_share", "betweenness", "upstream_dependents", "downstream_reach"])
     p.add_argument("--format", default="table", choices=["table", "csv", "json"])
     p.add_argument("--top", type=int, default=0)

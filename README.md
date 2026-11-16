@@ -109,6 +109,9 @@ plus a replication, hang faults (SIGSTOP), random multi-component failures and a
 - `cei` scored ρ = +0.13, +0.29 and +0.37, with every CI including zero. In socialNetwork its entropy
   term rewards components that get little traffic. Use `blast_share` to predict the size of an outage,
   and read `cei` as a structural index.
+- `--entropy flow` (flow-edge entropy: how evenly a component's traced calls spread over its incident
+  edges) was tested once, as a pre-registered revision. It scored ρ = +0.27, +0.17 and +0.50, and did not
+  beat betweenness in any app. It is kept as an option, not the default.
 - `blast_share` overpredicts datastores behind a cache, and datastores a service reads only at start-up.
   Traces cannot see either.
 

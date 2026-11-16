@@ -84,13 +84,44 @@ def demand_histories(ts: TraceSet, cover: dict, bin_seconds: float = 1.0) -> dic
     return out
 
 
+def flow_entropy(g: nx.DiGraph, cover: dict | None = None) -> dict:
+    """Entropy of how a component's traced calls spread over its incident edges.
+
+    For each node, the call counts on every incoming and outgoing edge are turned
+    into shares, and the Shannon entropy of those shares is divided by ln(k),
+    where k is the number of incident edges (0 when k <= 1). An inferred datastore
+    edge has no traced calls, so it is weighted by the number of traced requests
+    that touched the calling service, the same assumption used for coverage.
+    """
+    cover = cover or {}
+    out = {}
+    for n in g:
+        weights = []
+        for a, _, d in list(g.in_edges(n, data=True)) + list(g.out_edges(n, data=True)):
+            weights.append(float(len(cover.get(a, ())) if d.get("inferred") else d.get("calls", 0)))
+        k, total = len(weights), sum(weights)
+        if k <= 1 or total <= 0:
+            out[n] = 0.0
+            continue
+        shares = [x / total for x in weights if x > 0]
+        out[n] = float(-sum(p * math.log(p) for p in shares) / math.log(k))
+    return out
+
+
 def rank(ts: TraceSet, g: nx.DiGraph, cover: dict, governance: dict | None = None,
-         weights: dict | None = None, bin_seconds: float = 1.0) -> list:
-    """One row per graph node with every score, sorted by CEI descending."""
+         weights: dict | None = None, bin_seconds: float = 1.0, entropy: str = "demand") -> list:
+    """One row per graph node with every score, sorted by CEI descending.
+
+    entropy="demand" (default) is the published CEI entropy term over each
+    component's demand history. entropy="flow" uses flow_entropy() instead.
+    """
+    if entropy not in ("demand", "flow"):
+        raise ValueError(f"entropy must be 'demand' or 'flow', not {entropy!r}")
     w = {**DEFAULT_WEIGHTS, **(weights or {})}
     governance = governance or {}
     cen = composite_centrality(g)
     hist = demand_histories(ts, cover, bin_seconds)
+    flow = flow_entropy(g, cover) if entropy == "flow" else {}
     bw = nx.betweenness_centrality(g)
     try:
         pr = nx.pagerank(g, alpha=0.85)
@@ -100,7 +131,7 @@ def rank(ts: TraceSet, g: nx.DiGraph, cover: dict, governance: dict | None = Non
     rows = []
     for n in g.nodes:
         c = cen.get(n, 0.0)
-        h = demand_entropy(hist.get(n, []))
+        h = flow[n] if entropy == "flow" else demand_entropy(hist.get(n, []))
         r = float(governance.get(n, 0.0))
         s = w["alpha"] * c + w["beta"] * h + w["gamma"] * r
         up = nx.ancestors(g, n)

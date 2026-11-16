@@ -190,6 +190,33 @@ def test_cli_governance_range(jaeger_file, tmp_path):
         cli_main(["rank", str(jaeger_file), "--governance", str(gov)])
 
 
+def test_flow_entropy():
+    from dsb_criticality.score import flow_entropy
+
+    g = nx.DiGraph()
+    g.add_edge("a", "b", calls=10, inferred=False)
+    g.add_edge("b", "c", calls=10, inferred=False)
+    g.add_edge("b", "d", calls=0, inferred=True)
+    h = flow_entropy(g, cover={"b": {"t1", "t2"}})
+    assert h["a"] == 0.0  # one incident edge
+    # b: weights 10, 10 and 2 (the inferred edge gets b's coverage) over 3 edges
+    p = [10 / 22, 10 / 22, 2 / 22]
+    assert h["b"] == pytest.approx(-sum(x * math.log(x) for x in p) / math.log(3))
+    g2 = nx.DiGraph([("x", "y"), ("x", "z")])
+    nx.set_edge_attributes(g2, 5, "calls")
+    assert flow_entropy(g2)["x"] == pytest.approx(1.0)
+
+
+def test_rank_flow_entropy_option(jaeger_file):
+    ts = load(jaeger_file, DEPLOYMENT["aliases"])
+    g, cover = build(ts, DEPLOYMENT)
+    rows = {r["component"]: r for r in rank(ts, g, cover, entropy="flow")}
+    r = rows["compose"]
+    assert r["cei"] == pytest.approx(0.40 * r["centrality"] + 0.35 * r["entropy"])
+    with pytest.raises(ValueError):
+        rank(ts, g, cover, entropy="other")
+
+
 def test_bundled_maps_load():
     from dsb_criticality import load_map
 
