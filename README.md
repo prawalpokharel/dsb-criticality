@@ -96,18 +96,19 @@ CEI was introduced in:
 
 ## How well does it predict real failures?
 
-Each component of all three apps was crashed (SIGKILL) three times under the app's own wrk2 mixed
-workload, and the share of failed user requests was measured: 267 trials in all, plus a replication,
-hang faults (SIGSTOP), random multi-component failures and an 8x load run.
+Every started component of the three apps (24, 24 and 32) was crashed (SIGKILL) three times under the
+app's own wrk2 mixed workload, and the share of failed user requests was measured: 267 trials in all,
+plus a replication, hang faults (SIGSTOP), random multi-component failures and an 8x load run.
 
-- `blast_share` ranks components by measured impact with Spearman ρ = +0.64 in socialNetwork and in
-  hotelReservation. In mediaMicroservices every traced component serves the one endpoint, so it is the
-  same for all of them and cannot rank. It is within 10 points of the measured failure share for 50 of
-  59 components.
+- `blast_share` ranks components by measured impact with Spearman ρ = +0.64 in socialNetwork (95% CI
+  +0.17 to +0.87) and in hotelReservation (+0.24 to +0.90). In mediaMicroservices every traced
+  component serves the one endpoint, so it is the same for all of them and cannot rank. It is within
+  10 points of the measured failure share for 50 of 59 components.
 - The `what-if` share ranks random multi-component failures with ρ = +0.84 (socialNetwork) and +0.76
   (hotelReservation).
-- `cei` scored ρ = +0.13, +0.29 and +0.37. Its entropy term rewards components that get little traffic,
-  so use `blast_share` to predict the size of an outage and read `cei` as a structural index.
+- `cei` scored ρ = +0.13, +0.29 and +0.37, with every CI including zero. In socialNetwork its entropy
+  term rewards components that get little traffic. Use `blast_share` to predict the size of an outage,
+  and read `cei` as a structural index.
 - `blast_share` overpredicts datastores behind a cache, and datastores a service reads only at start-up.
   Traces cannot see either.
 
