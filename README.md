@@ -115,8 +115,9 @@ CEI was introduced in:
 
 I killed every started component of socialNetwork, hotelReservation and
 mediaMicroservices (24, 24 and 32 processes) three times while a Python port
-of each app's wrk2 mixed-workload script sent 100 requests/s. That is 240
-crash trials plus 27 no-fault trials. Spearman ρ between each column and the
+of each app's wrk2 script (mixed-workload for socialNetwork and
+hotelReservation, compose-review for mediaMicroservices) sent 100 requests/s.
+That is 240 crash trials plus 27 no-fault trials. Spearman ρ between each column and the
 measured share of failed requests, with 95% bootstrap CIs:
 
 | Column | socialNetwork | hotelReservation | mediaMicroservices |
@@ -128,9 +129,12 @@ measured share of failed requests, with 95% bootstrap CIs:
 
 `blast_share` landed within 10 percentage points of the measured share for
 19 of 22, 13 of 16 and 18 of 21 components. It overpredicts caches whose
-misses fall back to MongoDB (post-storage-memcached, review-storage-memcached)
-and datastores read only at start-up (geo and recommendation load theirs into
-memory). With 16 to 22 components per app the intervals are wide.
+misses fall back to MongoDB (post-storage-memcached, review-storage-memcached),
+MongoDB instances behind a cache (user-timeline-mongodb, movie-id-mongodb,
+mediaMicroservices' user-mongodb, mongodb-reservation) and datastores read only
+at start-up (geo and recommendation load theirs into memory). In
+hotelReservation, geo, recommendation, user and reservation leave no MongoDB
+spans, so the tool assumes every request through them reaches their MongoDB. With 16 to 22 components per app the intervals are wide.
 
 Pooled over the three apps, `cei` did worse than plain betweenness
 (Δρ −0.24, 95% CI −0.43 to −0.07), and also worse than degree, fan-out and
