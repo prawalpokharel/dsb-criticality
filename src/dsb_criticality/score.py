@@ -7,8 +7,8 @@ IEMCON 2026):
 
 C_i  composite centrality on the call graph: 0.35 PageRank + 0.30
      betweenness + 0.20 degree + 0.15 closeness, divided by the maximum.
-H_i  Shannon entropy of the node's demand history (calls per time bin,
-     divided by its own peak) over 10 bins in [0, 1], divided by log2(10).
+H_i  Shannon entropy of the node's demand history (requests that touch it per
+     time bin, divided by its own peak) over 10 bins in [0, 1], divided by log2(10).
 R_i  governance term in [0, 1]: operator-declared criticality.
 Defaults alpha=0.40, beta=0.35, gamma=0.25. Classes: >=0.75 critical,
 >=0.50 elevated, >=0.25 moderate, else low.

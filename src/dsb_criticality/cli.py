@@ -102,7 +102,8 @@ def main(argv=None):
     p.add_argument("--bin-seconds", type=float, default=1.0)
     p.add_argument("--entropy", default="demand", choices=["demand", "flow"],
                    help="CEI entropy term: demand history (published default) or flow-edge entropy")
-    p.add_argument("--sort", default="cei", choices=["cei", "blast_share", "betweenness", "upstream_dependents", "downstream_reach"])
+    p.add_argument("--sort", default="blast_share",
+                   choices=["blast_share", "cei", "betweenness", "upstream_dependents", "downstream_reach"])
     p.add_argument("--format", default="table", choices=["table", "csv", "json"])
     p.add_argument("--top", type=int, default=0)
     p.add_argument("--out")

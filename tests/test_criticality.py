@@ -179,8 +179,11 @@ def test_cli_rank_csv(jaeger_file, tmp_path, capsys):
     rows = list(csv.DictReader(open(out)))
     assert {r["component"] for r in rows} >= {"gw", "compose", "url-mongodb"}
     assert all(not math.isnan(float(r["cei"])) for r in rows)
-    cli_main(["rank", str(jaeger_file), "--deployment", str(mp), "--sort", "blast_share", "--top", "1"])
-    assert "gw" in capsys.readouterr().out
+    shares = [float(r["blast_share"]) for r in rows]
+    assert shares == sorted(shares, reverse=True)  # blast_share is the default sort
+    top_cei = max(rows, key=lambda r: float(r["cei"]))["component"]
+    cli_main(["rank", str(jaeger_file), "--deployment", str(mp), "--sort", "cei", "--top", "1"])
+    assert capsys.readouterr().out.splitlines()[2].split()[0] == top_cei
 
 
 def test_cli_governance_range(jaeger_file, tmp_path):
