@@ -9,36 +9,52 @@ or the gateway) it reports:
 
 | Column | Meaning |
 |---|---|
-| `cei` | Dependency-criticality score from the Centrality-Entropy Index (see below) |
+| `blast_share` | Share of traced requests that touched the component. If every call is synchronous with no fallback, a crash fails this share of requests. This is the column to use (see the fault tests below) |
+| `cei` | Score from the Centrality-Entropy Index (see below) |
 | `cei_class` | `critical` (≥ 0.75), `elevated` (≥ 0.50), `moderate` (≥ 0.25) or `low` |
-| `blast_share` | Share of traced requests that touched the component. If every call is synchronous with no fallback, a crash fails this share of requests |
-| `upstream_dependents` | Components with a call path to this one (static blast radius) |
 | `downstream_reach` | Components this one depends on, directly or not |
+| `upstream_dependents` | Components with a call path to this one. In the fault tests it ranked crash impact backwards |
 | `betweenness`, `degree`, `fan_out`, `fan_in`, `pagerank` | Plain graph measures, for comparison |
 
 ## Install
 
 ```bash
+git clone https://github.com/prawalpokharel/dsb-criticality
+cd dsb-criticality
 pip install -e .
 ```
 
-Python 3.9 or newer. The only dependencies are NetworkX and NumPy.
+Python 3.9 or newer. The tool needs NetworkX and NumPy. `tools/derive_maps.py`
+also needs PyYAML.
 
 ## Use
 
-Download traces from the Jaeger UI or its query API
-(`/api/traces?service=<gateway>&start=...&end=...`), then:
+A quick check on the trace file DeathStarBench ships (20 compose-post
+requests, so every component on that path gets a share of 1.0):
 
 ```bash
-dsb-criticality rank traces.json --deployment socialNetwork
+dsb-criticality rank /path/to/DeathStarBench/ms_collecter/traces-1695947455229.json --deployment socialNetwork
+```
+
+For a real ranking, run the app's mixed workload and download its traces
+from the Jaeger UI or the query API
+(`/api/traces?service=<gateway>&start=...&end=...&limit=...`). The gateway's
+traced name is `nginx-web-server` in socialNetwork, `frontend` in
+hotelReservation and `nginx` in mediaMicroservices. The repository samples
+10 to 20% of socialNetwork requests and 1% of hotelReservation requests
+(`JAEGER_SAMPLE_RATIO`). That is fine for the shares, but collect a few
+thousand traces. Then:
+
+```bash
+dsb-criticality rank traces.json --deployment socialNetwork --top 10
 dsb-criticality rank traces.json --deployment socialNetwork --format csv --out ranking.csv
-dsb-criticality rank traces.json --deployment hotelReservation --sort blast_share --top 10
 dsb-criticality what-if traces.json --deployment socialNetwork --fail user-mongodb,social-graph-redis
 dsb-criticality graph traces.json --deployment socialNetwork --out edges.csv
 ```
 
-The CSV that DeathStarBench's own `ms_collecter/trace_collect.py` writes is
-also accepted (`dsb-criticality rank trace.csv ...`).
+`rank` sorts by `blast_share` unless you pass `--sort`. The CSV that
+DeathStarBench's own `ms_collecter/trace_collect.py` writes is also accepted
+(`dsb-criticality rank trace.csv ...`).
 
 ### Deployment maps
 
@@ -53,10 +69,11 @@ Redis node. They were derived from the DeathStarBench source by
 python tools/derive_maps.py /path/to/DeathStarBench src/dsb_criticality/maps
 ```
 
-When the map lists a datastore whose calls are not traced (hotelReservation
-does not trace its MongoDB calls), the tool adds the edge and assumes every
-request through the service may reach it. `--no-inferred-stores` turns this
-off.
+When the map lists a datastore whose calls are not traced, the tool adds the
+edge and assumes every request through the service may reach it. In
+hotelReservation, geo, recommendation and user never trace their MongoDB
+calls, and profile, rate and reservation trace them only on a cache miss.
+`--no-inferred-stores` turns this off.
 
 ### Governance term
 
@@ -96,24 +113,37 @@ CEI was introduced in:
 
 ## How well does it predict real failures?
 
-Every started component of the three apps (24, 24 and 32) was crashed (SIGKILL) three times under the
-app's own wrk2 mixed workload, and the share of failed user requests was measured: 267 trials in all,
-plus a replication, hang faults (SIGSTOP), random multi-component failures and an 8x load run.
+I killed every started component of socialNetwork, hotelReservation and
+mediaMicroservices (24, 24 and 32 processes) three times while a Python port
+of each app's wrk2 mixed-workload script sent 100 requests/s. That is 240
+crash trials plus 27 no-fault trials. Spearman ρ between each column and the
+measured share of failed requests, with 95% bootstrap CIs:
 
-- `blast_share` ranks components by measured impact with Spearman ρ = +0.64 in socialNetwork (95% CI
-  +0.17 to +0.87) and in hotelReservation (+0.24 to +0.90). In mediaMicroservices every traced
-  component serves the one endpoint, so it is the same for all of them and cannot rank. It is within
-  10 points of the measured failure share for 50 of 59 components.
-- The `what-if` share ranks random multi-component failures with ρ = +0.84 (socialNetwork) and +0.76
-  (hotelReservation).
-- `cei` scored ρ = +0.13, +0.29 and +0.37, with every CI including zero. In socialNetwork its entropy
-  term rewards components that get little traffic. Use `blast_share` to predict the size of an outage,
-  and read `cei` as a structural index.
-- `--entropy flow` (flow-edge entropy: how evenly a component's traced calls spread over its incident
-  edges) was tested once, as a pre-registered revision. It scored ρ = +0.27, +0.17 and +0.50, and did not
-  beat betweenness in any app. It is kept as an option, not the default.
-- `blast_share` overpredicts datastores behind a cache, and datastores a service reads only at start-up.
-  Traces cannot see either.
+| Column | socialNetwork | hotelReservation | mediaMicroservices |
+|---|---|---|---|
+| `blast_share` | +0.64 [+0.17, +0.87] | +0.64 [+0.24, +0.90] | n/a (1.0 for every component) |
+| `betweenness` | +0.51 [+0.09, +0.77] | +0.57 [+0.10, +0.87] | +0.51 [+0.25, +0.68] |
+| `cei` | +0.13 [−0.43, +0.59] | +0.29 [−0.27, +0.72] | +0.37 [−0.02, +0.68] |
+| `upstream_dependents` | −0.43 [−0.75, +0.01] | −0.41 [−0.72, +0.08] | −0.33 [−0.66, +0.19] |
+
+`blast_share` landed within 10 percentage points of the measured share for
+19 of 22, 13 of 16 and 18 of 21 components. It overpredicts caches whose
+misses fall back to MongoDB (post-storage-memcached, review-storage-memcached)
+and datastores read only at start-up (geo and recommendation load theirs into
+memory). With 16 to 22 components per app the intervals are wide.
+
+Pooled over the three apps, `cei` did worse than plain betweenness
+(Δρ −0.24, 95% CI −0.43 to −0.07), and also worse than degree, fan-out and
+downstream reach. In socialNetwork its entropy term favours components that
+get little traffic. `--entropy flow` (how evenly a component's calls spread
+over its edges) was tried once as a pre-registered fix. It scored +0.27,
++0.17 and +0.50, and did not beat betweenness in any app. It is off by
+default.
+
+`what-if` was checked by killing whole datastore tiers and random pairs and
+triples together in socialNetwork and hotelReservation. Its predicted share
+ranked those sets with ρ = +0.84 and +0.76. In hotelReservation, the largest
+single `blast_share` in the set did as well (+0.81).
 
 ## Tests
 

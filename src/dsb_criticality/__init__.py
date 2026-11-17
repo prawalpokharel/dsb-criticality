@@ -5,4 +5,4 @@ from .score import rank, what_if
 from .traces import load
 
 __all__ = ["build", "load", "load_map", "rank", "what_if"]
-__version__ = "0.1.0"
+__version__ = "0.1.1"
